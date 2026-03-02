@@ -1,0 +1,9 @@
+# Output artifacts (generated per-project, not part of the library)
+docs/dev-team/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Skill packaging artifacts
+*.skill
