@@ -1,64 +1,61 @@
-# 🚀 Agentic Dev Team
+# Agentic Dev Team
 
-A reusable Claude Code skill + MCP server that launches a parallel agentic development team with structured planning, adversarial review, and parallel implementation.
+A reusable Claude Code skill that launches a parallel agentic development team with structured planning, adversarial review, and parallel implementation. Uses [Task Orchestrator](https://github.com/jpicklyk/task-orchestrator) for persistent task tracking and cross-session memory.
 
 ## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  MCP Server (dev-team)                                  │
-│  Handles: install, init, dep validation, status, history│
+│  Task Orchestrator (MCP Server — Docker)                │
+│  Handles: persistence, task tracking, dependencies,     │
+│  lifecycle, notes, cross-session context                │
 ├─────────────────────────────────────────────────────────┤
 │  Skill (SKILL.md + agents/)                             │
-│  Handles: orchestration, subagent spawning, workflow    │
+│  Handles: orchestration, subagent spawning, workflow,   │
+│  adversarial review, governance enforcement             │
 ├─────────────────────────────────────────────────────────┤
 │  /dev-team command                                      │
 │  Entry point for the user                               │
 └─────────────────────────────────────────────────────────┘
 ```
 
-The **MCP server** manages infrastructure — installing the skill, validating dependencies, tracking status, and recording run history. The **skill files** handle the actual orchestration — spawning PM, Supervisor, and Developer subagents.
+**Task Orchestrator** handles all infrastructure — persistent storage, task state machines, dependency graphs, and note-based metadata. The **skill files** handle orchestration — spawning PM, Supervisor, and Developer subagents with an adversarial review workflow.
 
 ## Quick Start
 
-### 1. Install the MCP server
+### 1. Pull Task Orchestrator
 
 ```bash
-git clone https://github.com/YOUR_USER/agentic-dev-team.git
-cd agentic-dev-team/mcp-server
-npm install
-npm run build
+docker pull ghcr.io/jpicklyk/task-orchestrator:latest
 ```
 
-### 2. Register with Claude Code
-
-Add to your project's `.mcp.json`:
+### 2. Add to your project's `.mcp.json`
 
 ```json
 {
   "mcpServers": {
-    "dev-team": {
-      "command": "node",
-      "args": ["/absolute/path/to/agentic-dev-team/mcp-server/build/index.js"]
+    "task-orchestrator": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i",
+        "-v", "dev-team-data:/app/data",
+        "ghcr.io/jpicklyk/task-orchestrator:latest"
+      ]
     }
   }
 }
 ```
 
-Or add to global Claude Code settings for all projects.
+The named volume `dev-team-data` persists task history across container restarts.
 
-### 3. Install the skill into your project
+### 3. Install the skill
 
-In Claude Code:
+```bash
+# Project-local install
+./install.sh
 
-```
-Use dev_team_install to set up the dev team in this project
-```
-
-Or globally:
-
-```
-Use dev_team_install with global=true
+# Or global install (all projects)
+./install.sh --global
 ```
 
 ### 4. Run it
@@ -66,18 +63,6 @@ Use dev_team_install with global=true
 ```
 /dev-team Build a REST API with JWT auth, user CRUD, and rate limiting
 ```
-
-## MCP Server Tools
-
-| Tool | Purpose |
-|------|---------|
-| `dev_team_install` | Install skill files, agents, command, and output dirs |
-| `dev_team_uninstall` | Remove skill files (preserves output artifacts) |
-| `dev_team_init` | Scaffold dirs, extract CLAUDE.md governance rules |
-| `dev_team_status` | Consolidated view of manifest, statuses, reviews |
-| `dev_team_validate_deps` | Verify npm/PyPI packages exist |
-| `dev_team_history` | Record, list, and retrieve past runs |
-| `dev_team_check_installed` | Verify installation completeness |
 
 ## Workflow
 
@@ -106,19 +91,44 @@ You describe scope
 | **Dev Supervisor** | Opus | Adversarial reviewer — catches hallucinated APIs, CLAUDE.md violations |
 | **Developers** | Sonnet | Implement tasks in parallel, write tests, follow approved plans |
 
-## Alternative: Skill-Only Install (no MCP)
+## What the Supervisor Catches
 
-```bash
-cd /path/to/your-project
-/path/to/agentic-dev-team/install.sh           # project-local
-/path/to/agentic-dev-team/install.sh --global  # all projects
-```
+The Dev Supervisor is the core differentiator. It acts as an adversarial quality gate that catches:
+
+- **Hallucinated dependencies** — packages that don't exist on npm/PyPI
+- **Fabricated API methods** — calling methods that aren't real
+- **Governance violations** — ignoring CLAUDE.md conventions
+- **Missing test coverage** — every acceptance criterion needs a test
+- **Unsupported claims** — "this is the standard approach" without evidence
+- **Implementation drift** — code that deviates from the approved plan
+
+## How Persistence Works
+
+All state lives in Task Orchestrator's database via standardized note keys:
+
+| Note Key | Created By | Purpose |
+|----------|-----------|---------|
+| `governance-rules` | Orchestrator | CLAUDE.md rules extracted at startup |
+| `execution-plan` | PM | Task grouping and dependency order |
+| `acceptance-criteria` | PM | Per-task success criteria |
+| `implementation-plan` | Developer | Technical approach for each task |
+| `review-verdict` | Supervisor | APPROVED / NEEDS_REVISION / ESCALATED |
+| `done-criteria` | Developer | Implementation summary with test results |
+| `final-report` | PM | Consolidated completion summary |
+
+Data persists across sessions via the Docker named volume, so you can resume work or review past runs.
 
 ## Requirements
 
+- Docker
 - Claude Code (latest)
-- Node.js 18+ (for MCP server)
-- Optional: `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`
+
+## Uninstall
+
+```bash
+./install.sh --uninstall           # project-local
+./install.sh --uninstall --global  # global
+```
 
 ## License
 

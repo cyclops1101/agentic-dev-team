@@ -11,6 +11,8 @@ Locate the skill by checking these paths in order:
 
 Also read all agent definitions in the skill's `agents/` directory.
 
+Verify Task Orchestrator is connected: run `/mcp` and confirm `task-orchestrator` is listed. If not connected, inform the user they need to set up Task Orchestrator first.
+
 The user's scope is:
 
 $ARGUMENTS

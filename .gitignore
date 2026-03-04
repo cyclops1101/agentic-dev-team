@@ -1,15 +1,9 @@
-# Output artifacts (generated per-project, not part of the library)
-docs/dev-team/
-
-# Build output
-build/
-
-# Dependencies
-node_modules/
-
 # OS
 .DS_Store
 Thumbs.db
 
 # Skill packaging artifacts
 *.skill
+
+# Task Orchestrator data (managed by Docker volume)
+.taskorchestrator/
